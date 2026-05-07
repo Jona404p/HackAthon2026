@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { Fragment, useEffect, useState } from "react"
 import { Polyline, CircleMarker, Tooltip } from "react-leaflet"
 import type { LayerComponentProps } from "@/lib/map/types"
 import { DURANGO_ROUTES, type TransitRoute } from "@/lib/map/transit-routes"
@@ -47,28 +47,48 @@ interface AnimatedBusProps {
   speed: number // ms for full cycle
 }
 
+const BUS_TICK_MS = 120
+
 function AnimatedBus({ route, offset, speed }: AnimatedBusProps) {
   const [progress, setProgress] = useState(offset)
   const [direction, setDirection] = useState<1 | -1>(1)
+  const [isHolding, setIsHolding] = useState(false)
+  const [holdDuration, setHoldDuration] = useState(0)
+  const [speedModifier] = useState(() => 0.92 + Math.random() * 0.16)
 
   useEffect(() => {
-    const interval = setInterval(() => {
+    if (isHolding) return
+
+    const interval = window.setInterval(() => {
       setProgress((prev) => {
-        const next = prev + (direction * 0.005)
+        const next = prev + (direction * (BUS_TICK_MS / (speed * speedModifier)))
+
         if (next >= 1) {
           setDirection(-1)
+          setHoldDuration(900 + Math.random() * 700)
+          setIsHolding(true)
           return 1
         }
+
         if (next <= 0) {
           setDirection(1)
+          setHoldDuration(900 + Math.random() * 700)
+          setIsHolding(true)
           return 0
         }
+
         return next
       })
-    }, speed / 200)
+    }, BUS_TICK_MS)
 
-    return () => clearInterval(interval)
-  }, [direction, speed])
+    return () => window.clearInterval(interval)
+  }, [direction, isHolding, speed, speedModifier])
+
+  useEffect(() => {
+    if (!isHolding) return
+    const timeout = window.setTimeout(() => setIsHolding(false), holdDuration)
+    return () => window.clearTimeout(timeout)
+  }, [isHolding, holdDuration])
 
   const position = interpolatePosition(route.points, progress)
 
@@ -115,10 +135,10 @@ export function TransitLayer({ enabled }: LayerComponentProps) {
 
       {/* Multiple animated buses per route */}
       {DURANGO_ROUTES.map((route) => (
-        <>
-          <AnimatedBus key={`${route.name}-bus-1`} route={route} offset={0} speed={8000} />
-          <AnimatedBus key={`${route.name}-bus-2`} route={route} offset={0.5} speed={8000} />
-        </>
+        <Fragment key={route.name}>
+          <AnimatedBus key={`${route.name}-bus-1`} route={route} offset={0} speed={18000} />
+          <AnimatedBus key={`${route.name}-bus-2`} route={route} offset={0.55} speed={22000} />
+        </Fragment>
       ))}
     </>
   )
