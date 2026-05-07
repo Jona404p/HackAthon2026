@@ -1,0 +1,11 @@
+import { HeroSection } from "@/components/home/hero-section"
+import { Navbar } from "@/components/layout/navbar"
+
+export default function HomePage() {
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <Navbar />
+      <HeroSection />
+    </main>
+  )
+}
