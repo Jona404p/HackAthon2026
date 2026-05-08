@@ -359,7 +359,7 @@ export function AnonymousForum({ initialPostId }: { initialPostId?: string } = {
           <Users className="w-7 h-7 text-primary" />
         </div>
         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground mb-2">
-          Voz Ciudadana
+          reporte Social
         </h1>
         <p className="text-muted-foreground max-w-md mx-auto text-sm leading-relaxed">
           Espacio seguro y anonimo para reportar lo que pasa en Durango. Sin registro. Sin rastreo.
