@@ -5,7 +5,6 @@ import { MapContainer, TileLayer, ZoomControl, useMap, useMapEvents } from "reac
 import L from "leaflet"
 import { useTheme } from "next-themes"
 import "leaflet/dist/leaflet.css"
-import { LayerControl } from "./layer-control"
 import { ReportMarkers } from "./report-markers"
 import { LAYER_REGISTRY } from "@/lib/map/layer-registry"
 import { DEFAULT_MAP_CONFIG } from "@/lib/map/types"
@@ -114,18 +113,13 @@ export function InteractiveMap({
   focusLocation,
   onFocusConsumed,
 }: InteractiveMapProps) {
-  const [layers, setLayers] = useState<MapLayer[]>(LAYER_REGISTRY)
+  // Use layers from registry, all enabled by default (no toggle functionality)
+  const layers = LAYER_REGISTRY
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-  }, [])
-
-  const handleToggle = useCallback((id: MapLayer["id"]) => {
-    setLayers((prev) =>
-      prev.map((l) => (l.id === id ? { ...l, enabled: !l.enabled } : l))
-    )
   }, [])
 
   const center: [number, number] =
@@ -186,9 +180,6 @@ export function InteractiveMap({
         {/* Report markers — reads from Supabase in realtime */}
         <ReportMarkers />
       </MapContainer>
-
-      {/* Layer toggle panel */}
-      <LayerControl layers={layers} onToggle={handleToggle} />
 
       {/* Attribution */}
       <div className="absolute bottom-2 right-2 z-[999] text-[10px] text-muted-foreground/60 font-mono pointer-events-none">

@@ -292,29 +292,29 @@ function RutasSegurasContent() {
         )}
 
         {/* Mobile FAB para abrir panel */}
-        <div className="lg:hidden absolute bottom-4 right-4 z-[999]">
+        <div className="lg:hidden absolute bottom-20 right-4 z-[999]">
           <Sheet open={isPanelOpen} onOpenChange={setIsPanelOpen}>
             <SheetTrigger asChild>
               <Button 
                 size="lg" 
-                className="rounded-full w-14 h-14 shadow-lg"
+                className="rounded-full w-14 h-14 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all"
+                title="Configurar ruta segura"
               >
                 <Settings2 className="w-6 h-6" />
-                <span className="sr-only">Configurar ruta</span>
+                <span className="sr-only">Configurar ruta segura</span>
               </Button>
             </SheetTrigger>
             <SheetContent 
               side="bottom" 
-              className="h-[85vh] p-0 rounded-t-3xl"
+              className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col"
             >
-              <div className="h-full overflow-hidden flex flex-col">
-                {/* Handle bar */}
-                <div className="flex justify-center py-3 shrink-0">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  {MobileControlPanelContent}
-                </div>
+              {/* Handle bar */}
+              <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-border/30">
+                <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
+              </div>
+              {/* Panel content con scroll propio */}
+              <div className="flex-1 min-h-0">
+                {MobileControlPanelContent}
               </div>
             </SheetContent>
           </Sheet>
@@ -322,27 +322,29 @@ function RutasSegurasContent() {
 
         {/* Quick info bar en movil cuando hay ruta */}
         {route && !isPanelOpen && (
-          <div className="lg:hidden absolute bottom-20 left-4 right-20 z-[998]">
+          <div className="lg:hidden absolute bottom-[5.5rem] left-4 right-20 z-40">
             <button 
               onClick={() => setIsPanelOpen(true)}
-              className="w-full bg-card/95 backdrop-blur-sm border border-border rounded-xl p-3 shadow-lg"
+              className="w-full bg-background/95 backdrop-blur-md border border-border/60 rounded-xl p-3.5 shadow-lg hover:shadow-xl transition-all active:scale-95"
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-3 h-3 rounded-full ${
-                    route.safetyScore >= 60 ? 'bg-green-500' : 
-                    route.safetyScore >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={`w-3 h-3 rounded-full shrink-0 ${
+                    route.safetyScore >= 60 ? 'bg-emerald-500' : 
+                    route.safetyScore >= 40 ? 'bg-amber-500' : 'bg-red-500'
                   }`} />
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-foreground">
-                      {Math.round(route.distance / 1000 * 10) / 10} km - {Math.round(route.estimatedTime)} min
+                  <div className="text-left min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {Math.round(route.distance / 1000 * 10) / 10} km
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Seguridad: {route.safetyScore}%
+                      ~{Math.round(route.estimatedTime)} min • {route.safetyScore}% seguro
                     </p>
                   </div>
                 </div>
-                <span className="text-xs text-primary">Ver detalles</span>
+                <span className="text-xs font-medium text-primary whitespace-nowrap">
+                  Ver más
+                </span>
               </div>
             </button>
           </div>
@@ -362,7 +364,7 @@ export default function RutasSegurasPage() {
     <div className="flex flex-col h-[100dvh] bg-background overflow-hidden">
       <Navbar backToHome />
 
-      <main className="flex flex-1 overflow-hidden pt-[60px] sm:pt-[65px]" aria-label="Sistema de Rutas Seguras">
+      <main className="flex flex-1 overflow-hidden" aria-label="Sistema de Rutas Seguras">
         <Suspense
           fallback={
             <div className="flex-1 flex items-center justify-center bg-background">

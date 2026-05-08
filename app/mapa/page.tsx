@@ -3,10 +3,12 @@
 import dynamic from "next/dynamic"
 import { Navbar } from "@/components/layout/navbar"
 import { useSearchParams, useRouter } from "next/navigation"
-import { Suspense, useState, useCallback } from "react"
+import { Suspense, useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
-import { Menu, X } from "lucide-react"
+import { DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { Menu, X, MapPin, PanelLeft, PanelLeftClose } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 // Leaflet requires the browser — disable SSR for the map component
 const InteractiveMap = dynamic(
@@ -14,8 +16,11 @@ const InteractiveMap = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center w-full h-full bg-background">
-        <span className="font-mono text-muted-foreground text-sm animate-pulse">
+      <div className="flex flex-col items-center justify-center w-full h-full bg-background gap-3">
+        <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
+          <MapPin className="w-5 h-5 text-primary/60" />
+        </div>
+        <span className="text-muted-foreground text-sm font-medium">
           Cargando mapa...
         </span>
       </div>
@@ -28,8 +33,11 @@ const ReportPanel = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div className="flex items-center justify-center w-full h-full bg-background">
-        <span className="font-mono text-muted-foreground text-sm animate-pulse">
+      <div className="flex flex-col items-center justify-center w-full h-full bg-background gap-3">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center animate-pulse">
+          <PanelLeft className="w-4 h-4 text-primary/60" />
+        </div>
+        <span className="text-muted-foreground text-xs">
           Cargando panel...
         </span>
       </div>
@@ -49,20 +57,22 @@ function MapaContent() {
   const [pickingLocation, setPickingLocation] = useState(false)
   const [pickedLocation, setPickedLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [focusLocation, setFocusLocation] = useState<{ lat: number; lng: number; zoom?: number } | null>(null)
-  
+
   // Mobile panel state
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  // Desktop panel toggle
+  const [isDesktopPanelOpen, setIsDesktopPanelOpen] = useState(true)
 
   const handleRequestPick = useCallback(() => {
     setPickingLocation(true)
     setPickedLocation(null)
-    setIsPanelOpen(false) // Cerrar panel en movil para ver el mapa
+    setIsPanelOpen(false)
   }, [])
 
   const handleLocationPicked = useCallback((lat: number, lng: number) => {
     setPickedLocation({ lat, lng })
     setPickingLocation(false)
-    setIsPanelOpen(true) // Abrir panel despues de seleccionar ubicacion
+    setIsPanelOpen(true)
   }, [])
 
   const handleCancelPick = useCallback(() => {
@@ -77,14 +87,14 @@ function MapaContent() {
 
   const handleFocusReport = useCallback((lat: number, lng: number, zoom?: number) => {
     setFocusLocation({ lat, lng, zoom })
-    setIsPanelOpen(false) // Cerrar panel para ver el reporte en el mapa
+    setIsPanelOpen(false)
   }, [])
 
   const handleViewDiscussion = useCallback((postId: string) => {
     router.push(`/?post=${postId}`)
   }, [router])
 
-  // Panel component para reutilizar en desktop y mobile
+  // Panel component para reutilizar
   const PanelContent = (
     <ReportPanel
       pickedLocation={pickedLocation}
@@ -103,10 +113,11 @@ function MapaContent() {
       <div className="relative flex-1 min-w-0">
         <Suspense
           fallback={
-            <div className="flex items-center justify-center w-full h-full bg-background">
-              <span className="font-mono text-muted-foreground text-sm animate-pulse">
-                Cargando mapa...
-              </span>
+            <div className="flex flex-col items-center justify-center w-full h-full bg-background gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
+                <MapPin className="w-5 h-5 text-primary/60" />
+              </div>
+              <span className="text-muted-foreground text-sm">Cargando mapa...</span>
             </div>
           }
         >
@@ -124,26 +135,48 @@ function MapaContent() {
         {/* Picking mode overlay banner */}
         {pickingLocation && (
           <div className="absolute inset-x-0 top-4 z-[1000] flex justify-center pointer-events-none px-4">
-            <div className="bg-primary text-primary-foreground px-4 py-2 sm:px-5 sm:py-2.5 rounded-full shadow-xl flex items-center gap-2 text-xs sm:text-sm font-medium pointer-events-auto max-w-[90%]">
-              <span className="w-2 h-2 rounded-full bg-primary-foreground animate-pulse shrink-0" />
-              <span className="truncate">Toca el mapa para marcar la ubicacion</span>
+            <div className="bg-primary text-primary-foreground px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl shadow-xl shadow-primary/20 flex items-center gap-2.5 text-xs sm:text-sm font-semibold pointer-events-auto max-w-[92%] backdrop-blur-sm">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary-foreground opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-primary-foreground" />
+              </span>
+              <span className="truncate">Toca el mapa para marcar la ubicación</span>
               <button
                 onClick={handleCancelPick}
-                className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
+                className="ml-1 w-6 h-6 rounded-full bg-primary-foreground/20 flex items-center justify-center hover:bg-primary-foreground/30 transition-colors shrink-0"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
         )}
 
+        {/* Desktop panel toggle button */}
+        <div className="hidden lg:block absolute top-4 left-4 z-[999]">
+          <button
+            onClick={() => setIsDesktopPanelOpen(!isDesktopPanelOpen)}
+            className={cn(
+              "w-10 h-10 rounded-xl bg-background/95 backdrop-blur-md border border-border/60 shadow-lg flex items-center justify-center text-foreground hover:bg-background transition-all active:scale-95",
+              isDesktopPanelOpen && "border-primary/30 text-primary"
+            )}
+            title={isDesktopPanelOpen ? "Cerrar panel" : "Abrir panel"}
+          >
+            {isDesktopPanelOpen ? (
+              <PanelLeftClose className="w-4.5 h-4.5" />
+            ) : (
+              <PanelLeft className="w-4.5 h-4.5" />
+            )}
+          </button>
+        </div>
+
         {/* Mobile FAB to open panel */}
-        <div className="lg:hidden absolute bottom-4 right-4 z-[999]">
+        <div className="lg:hidden absolute bottom-20 right-5 z-[999]">
           <Sheet open={isPanelOpen} onOpenChange={setIsPanelOpen}>
             <SheetTrigger asChild>
               <Button 
                 size="lg" 
-                className="rounded-full w-14 h-14 shadow-lg"
+                className="rounded-full w-14 h-14 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all active:scale-95"
+                title="Abrir panel de reportes"
               >
                 <Menu className="w-6 h-6" />
                 <span className="sr-only">Abrir panel de reportes</span>
@@ -151,24 +184,28 @@ function MapaContent() {
             </SheetTrigger>
             <SheetContent 
               side="bottom" 
-              className="h-[85vh] p-0 rounded-t-3xl"
+              className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col"
             >
-              <div className="h-full overflow-hidden flex flex-col">
-                {/* Handle bar */}
-                <div className="flex justify-center py-3 shrink-0">
-                  <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  {PanelContent}
-                </div>
+              <DialogTitle className="sr-only">Panel de reportes</DialogTitle>
+              <DialogDescription className="sr-only">Panel móvil para ver y crear reportes en el mapa</DialogDescription>
+              {/* Handle bar */}
+              <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-border/30">
+                <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
+              </div>
+              {/* Panel content — ocupa el espacio restante con su propio scroll */}
+              <div className="flex-1 min-h-0">
+                {PanelContent}
               </div>
             </SheetContent>
           </Sheet>
         </div>
       </div>
 
-      {/* Desktop panel - hidden on mobile */}
-      <div className="hidden lg:block">
+      {/* Desktop panel */}
+      <div className={cn(
+        "hidden lg:block transition-all duration-300 ease-out border-l border-border/50",
+        isDesktopPanelOpen ? "w-80 xl:w-96 opacity-100" : "w-0 opacity-0 overflow-hidden"
+      )}>
         {PanelContent}
       </div>
     </div>
@@ -180,13 +217,19 @@ export default function MapaPage() {
     <div className="flex flex-col h-[100dvh] bg-background overflow-hidden">
       <Navbar backToHome />
 
-      <main className="flex flex-1 overflow-hidden pt-[60px] sm:pt-[65px]" aria-label="Mapa interactivo de Durango">
+      <main 
+        className="flex flex-1 overflow-hidden" 
+        aria-label="Mapa interactivo de Durango"
+      >
         <Suspense
           fallback={
             <div className="flex-1 flex items-center justify-center bg-background">
-              <span className="font-mono text-muted-foreground text-sm animate-pulse">
-                Cargando...
-              </span>
+              <div className="flex flex-col items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center animate-pulse">
+                  <MapPin className="w-5 h-5 text-primary/60" />
+                </div>
+                <span className="text-muted-foreground text-sm">Cargando...</span>
+              </div>
             </div>
           }
         >
