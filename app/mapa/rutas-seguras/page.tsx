@@ -2,9 +2,10 @@
 
 import dynamic from "next/dynamic"
 import { Navbar } from "@/components/layout/navbar"
+import { MobileNavTabs } from "@/components/layout/mobile-nav-tabs"
 import { Suspense, useState, useCallback, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Settings2 } from "lucide-react"
 import type { Coordinate, RouteResult, RoutingOptions, Report } from "@/lib/map/safe-routing"
 import { findSafeRoute } from "@/lib/map/safe-routing"
@@ -308,6 +309,7 @@ function RutasSegurasContent() {
               side="bottom" 
               className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col"
             >
+              <SheetTitle className="sr-only">Configuración de ruta segura</SheetTitle>
               {/* Handle bar */}
               <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-border/30">
                 <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
@@ -361,10 +363,10 @@ function RutasSegurasContent() {
 
 export default function RutasSegurasPage() {
   return (
-    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
       <Navbar backToHome />
 
-      <main className="flex flex-1 overflow-hidden" aria-label="Sistema de Rutas Seguras">
+      <main className="flex flex-1 min-h-0 overflow-hidden pb-20" aria-label="Sistema de Rutas Seguras">
         <Suspense
           fallback={
             <div className="flex-1 flex items-center justify-center bg-background">
@@ -377,6 +379,8 @@ export default function RutasSegurasPage() {
           <RutasSegurasContent />
         </Suspense>
       </main>
+
+      <MobileNavTabs />
     </div>
   )
 }

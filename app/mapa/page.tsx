@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic"
 import { Navbar } from "@/components/layout/navbar"
+import { MobileNavTabs } from "@/components/layout/mobile-nav-tabs"
 import { useSearchParams, useRouter } from "next/navigation"
 import { Suspense, useState, useCallback, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -169,35 +170,41 @@ function MapaContent() {
           </button>
         </div>
 
-        {/* Mobile FAB to open panel */}
-        <div className="lg:hidden absolute bottom-20 right-5 z-[999]">
-          <Sheet open={isPanelOpen} onOpenChange={setIsPanelOpen}>
-            <SheetTrigger asChild>
-              <Button 
-                size="lg" 
-                className="rounded-full w-14 h-14 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all active:scale-95"
-                title="Abrir panel de reportes"
+        {/* Mobile panel action bar */}
+        <div className="lg:hidden fixed inset-x-0 bottom-16 z-[999] px-4">
+          <div className="flex items-center justify-between gap-3 rounded-3xl border border-border/70 bg-background/95 p-3 shadow-2xl shadow-black/10 backdrop-blur-md">
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-foreground">Panel de reportes</p>
+              <p className="text-xs text-muted-foreground">Abre el panel para ver y crear reportes desde el mapa.</p>
+            </div>
+            <Sheet open={isPanelOpen} onOpenChange={setIsPanelOpen}>
+              <SheetTrigger asChild>
+                <Button 
+                  size="sm" 
+                  className="rounded-full w-12 h-12 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40 transition-all active:scale-95"
+                  title="Abrir panel de reportes"
+                >
+                  <Menu className="w-5 h-5" />
+                  <span className="sr-only">Abrir panel de reportes</span>
+                </Button>
+              </SheetTrigger>
+              <SheetContent 
+                side="bottom" 
+                className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col"
               >
-                <Menu className="w-6 h-6" />
-                <span className="sr-only">Abrir panel de reportes</span>
-              </Button>
-            </SheetTrigger>
-            <SheetContent 
-              side="bottom" 
-              className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col"
-            >
-              <DialogTitle className="sr-only">Panel de reportes</DialogTitle>
-              <DialogDescription className="sr-only">Panel móvil para ver y crear reportes en el mapa</DialogDescription>
-              {/* Handle bar */}
-              <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-border/30">
-                <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
-              </div>
-              {/* Panel content — ocupa el espacio restante con su propio scroll */}
-              <div className="flex-1 min-h-0">
-                {PanelContent}
-              </div>
-            </SheetContent>
-          </Sheet>
+                <DialogTitle className="sr-only">Panel de reportes</DialogTitle>
+                <DialogDescription className="sr-only">Panel móvil para ver y crear reportes en el mapa</DialogDescription>
+                {/* Handle bar */}
+                <div className="flex justify-center pt-3 pb-2 shrink-0 border-b border-border/30">
+                  <div className="w-10 h-1.5 rounded-full bg-muted-foreground/30" />
+                </div>
+                {/* Panel content — ocupa el espacio restante con su propio scroll */}
+                <div className="flex-1 min-h-0">
+                  {PanelContent}
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
 
@@ -214,11 +221,11 @@ function MapaContent() {
 
 export default function MapaPage() {
   return (
-    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
       <Navbar backToHome />
 
       <main 
-        className="flex flex-1 overflow-hidden" 
+        className="flex flex-col flex-1 min-h-0 overflow-hidden pb-20" 
         aria-label="Mapa interactivo de Durango"
       >
         <Suspense
@@ -236,6 +243,8 @@ export default function MapaPage() {
           <MapaContent />
         </Suspense>
       </main>
+
+      <MobileNavTabs />
     </div>
   )
 }

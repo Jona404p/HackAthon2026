@@ -73,46 +73,8 @@ export function Navbar({ backToHome = false }: NavbarProps) {
         </div>
       </header>
 
-      {/* ---- Mobile bottom tab bar — only inside /mapa ---- */}
-      {isMapPage && (
-        <nav
-          className="md:hidden fixed bottom-0 left-0 right-0 z-50 flex items-center border-t border-border bg-background/95 backdrop-blur-sm"
-          aria-label="Navegacion del mapa"
-        >
-          <Link
-            href="/"
-            className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground hover:text-foreground transition-colors"
-          >
-            <Home className="w-5 h-5" aria-hidden="true" />
-            <span className="text-[10px] font-medium">Inicio</span>
-          </Link>
-          {mapNavLinks.map(({ href, label, icon: Icon, exact }) => {
-            const active = exact ? pathname === href : pathname?.startsWith(href)
-            return (
-              <Link
-                key={href}
-                href={href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "flex flex-col items-center justify-center flex-1 h-16 gap-1 transition-colors relative",
-                  active ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {active && (
-                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary" />
-                )}
-                <Icon className="w-5 h-5" aria-hidden="true" />
-                <span className="text-[10px] font-medium leading-none">{label}</span>
-              </Link>
-            )
-          })}
-        </nav>
-      )}
-
       {/* Spacer para el header fijo */}
       <div className="h-14" />
-      {/* Spacer para la barra inferior en móvil dentro de /mapa */}
-      {isMapPage && <div className="h-16 md:h-0" />}
     </>
   )
 }

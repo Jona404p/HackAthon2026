@@ -2,9 +2,11 @@
 
 import dynamic from "next/dynamic"
 import { Navbar } from "@/components/layout/navbar"
+import { MobileNavTabs } from "@/components/layout/mobile-nav-tabs"
 import { CollapsibleLegend } from "@/components/map/collapsible-legend"
 import { useState } from "react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Info } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
@@ -61,12 +63,12 @@ export default function ZonasSeguras() {
   const isMobile = useIsMobile()
 
   return (
-    <div className="flex flex-col h-[100dvh] bg-background overflow-hidden">
+    <div className="flex flex-col min-h-screen bg-background overflow-hidden">
       <Navbar />
 
-      <main className="flex-1 relative" aria-label="Mapa de seguridad de Durango">
-        <div className="w-full h-full">
-          <PostalCodesMap hideLegendOnMobile />
+      <main className="flex flex-col flex-1 overflow-hidden relative pb-20" aria-label="Mapa de seguridad de Durango">
+        <div className="flex-1 min-w-0">
+          <PostalCodesMap />
         </div>
 
         {/* Leyenda Colapsable - Desktop */}
@@ -97,6 +99,7 @@ export default function ZonasSeguras() {
                 side="bottom"
                 className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col overflow-y-auto"
               >
+                <DialogTitle className="sr-only">Leyenda del mapa</DialogTitle>
                 <CollapsibleLegend
                   items={legendItems}
                   title="Mapa de Riesgo"
@@ -109,6 +112,8 @@ export default function ZonasSeguras() {
           </div>
         )}
       </main>
+
+      <MobileNavTabs />
     </div>
   )
 }

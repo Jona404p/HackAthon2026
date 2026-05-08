@@ -86,29 +86,32 @@ export function PostalCodesMap() {
 
   return (
     <div className="relative w-full h-full">
-      <MapContainer
-        center={DEFAULT_MAP_CONFIG.center}
-        zoom={DEFAULT_MAP_CONFIG.zoom}
-        minZoom={DEFAULT_MAP_CONFIG.minZoom}
-        maxZoom={DEFAULT_MAP_CONFIG.maxZoom}
-        zoomControl={false}
-        className="w-full h-full"
-        style={{ background: bgColor }}
-      >
-        <TileLayer
-          key={tileUrl}
-          url={tileUrl}
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-          subdomains="abcd"
-          maxZoom={20}
-        />
-        <ZoomControl position="bottomleft" />
-        
-        {/* Heatmap layer */}
-        {!isLoading && riskReports.length > 0 && (
-          <HeatmapLayer reports={riskReports} />
-        )}
-      </MapContainer>
+      {mounted && (
+        <MapContainer
+          key="postal-codes-map"
+          center={DEFAULT_MAP_CONFIG.center}
+          zoom={DEFAULT_MAP_CONFIG.zoom}
+          minZoom={DEFAULT_MAP_CONFIG.minZoom}
+          maxZoom={DEFAULT_MAP_CONFIG.maxZoom}
+          zoomControl={false}
+          className="w-full h-full"
+          style={{ background: bgColor }}
+        >
+          <TileLayer
+            key={tileUrl}
+            url={tileUrl}
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+            subdomains="abcd"
+            maxZoom={20}
+          />
+          <ZoomControl position="bottomleft" />
+          
+          {/* Heatmap layer */}
+          {!isLoading && riskReports.length > 0 && (
+            <HeatmapLayer reports={riskReports} />
+          )}
+        </MapContainer>
+      )}
 
       {/* Panel de leyenda */}
       <div className="absolute top-4 right-4 z-[999] bg-background/95 backdrop-blur-sm border border-border rounded-xl shadow-lg p-4 max-w-[280px]">
