@@ -99,7 +99,7 @@ export function SafeZonesMap() {
 
       {/* Attribution */}
       <div className="absolute bottom-2 right-2 z-[999] text-[10px] text-muted-foreground/60 font-mono pointer-events-none">
-        SafeRoute Durango — Zonas Seguras
+        NoFear Durango — Zonas Seguras
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 const spaceGrotesk = Space_Grotesk({ subsets: ['latin'], variable: '--font-space-grotesk' })
 
 export const metadata: Metadata = {
-  title: 'SafeRoute Durango — Movilidad Segura',
+  title: 'NoFear Durango — Movilidad Segura',
   description: 'Plataforma de seguridad urbana basada en mapas para la ciudad de Durango, México.',
   generator: 'v0.app',
 }

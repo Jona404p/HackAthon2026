@@ -50,7 +50,7 @@ export function InteractiveMap() {
 
       {/* Attribution overlay */}
       <div className="absolute bottom-2 right-2 z-[999] text-[10px] text-muted-foreground/60 font-mono pointer-events-none">
-        SafeRoute Durango v0.1
+        NoFear Durango v0.1
       </div>
     </div>
   )

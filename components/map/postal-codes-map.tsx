@@ -263,7 +263,7 @@ export function PostalCodesMap() {
       </div>
 
       <div className="absolute bottom-2 right-2 z-[999] text-[10px] text-muted-foreground/60 font-mono pointer-events-none">
-        SafeRoute Durango — Códigos Postales
+        NoFear Durango — Códigos Postales
       </div>
     </div>
   )

@@ -20,25 +20,14 @@ export function Navbar({ backToHome = false }: NavbarProps) {
           <MapPin className="w-4 h-4 text-primary-foreground" aria-hidden="true" />
         </div>
         <span className="font-mono font-bold text-foreground text-base tracking-tight">
-          SafeRoute<span className="text-primary">.</span>
+          NoFear<span className="text-primary"></span>
         </span>
       </Link>
 
       <nav className="flex items-center gap-4" aria-label="Navegacion principal">
         {isMapPage ? (
           <>
-            <Link
-              href="/mapa"
-              className={cn(
-                "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md font-mono transition-all",
-                pathname === "/mapa"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground hover:bg-secondary"
-              )}
-            >
-              <Bus className="w-4 h-4" aria-hidden="true" />
-              Transporte
-            </Link>
+
             <Link
               href="/mapa/zonas-seguras"
               className={cn(
