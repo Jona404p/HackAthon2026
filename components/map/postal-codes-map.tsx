@@ -13,6 +13,7 @@ import {
   SECURITY_LABELS,
   type SecurityLevel,
 } from "@/lib/map/postal-codes"
+import { getPostalCodeCoordinates, generateCirclePolygon } from "@/lib/map/postal-codes-coords"
 import { DEFAULT_MAP_CONFIG } from "@/lib/map/types"
 import { cn } from "@/lib/utils"
 
@@ -31,37 +32,14 @@ function buildOverpassQuery(cps: string[]): string {
   `.trim()
 }
 
-// Fallback: build a simple square polygon around a lat/lng pair
-function squarePolygon(lat: number, lng: number, halfDeg = 0.008) {
-  return {
-    type: "Feature" as const,
-    properties: {},
-    geometry: {
-      type: "Polygon" as const,
-      coordinates: [[
-        [lng - halfDeg, lat - halfDeg],
-        [lng + halfDeg, lat - halfDeg],
-        [lng + halfDeg, lat + halfDeg],
-        [lng - halfDeg, lat + halfDeg],
-        [lng - halfDeg, lat - halfDeg],
-      ]],
-    },
+// Fallback: build a circular polygon for a postal code
+function fallbackPolygon(cp: string) {
+  const coords = getPostalCodeCoordinates(cp)
+  if (!coords) {
+    // Last resort fallback for unknown postal codes
+    return generateCirclePolygon(24.028, -104.653, 0.008, 12)
   }
-}
-
-// Rough centre coordinates per CP prefix group for fallback grid
-const CP_CENTERS: Record<string, [number, number]> = {
-  "340": [24.028, -104.653],
-  "341": [24.045, -104.640],
-  "342": [24.012, -104.668],
-}
-
-function getCenterForCp(cp: string): [number, number] {
-  const prefix = cp.slice(0, 3)
-  const base = CP_CENTERS[prefix] ?? [24.028, -104.653]
-  // Spread by last two digits so they don't all overlap
-  const offset = (parseInt(cp.slice(3)) % 10) * 0.003
-  return [base[0] + offset * 0.5, base[1] + offset * 0.5]
+  return generateCirclePolygon(coords.lat, coords.lng, coords.radius, 24)
 }
 
 type LoadStatus = "idle" | "loading" | "done" | "error"
@@ -141,17 +119,16 @@ export function PostalCodesMap() {
           })
         }
 
-        // Fallback squares for CPs not found in Overpass
+        // Fallback circles for CPs not found in Overpass
         for (const entry of POSTAL_CODES) {
           if (!foundCps.has(entry.cp)) {
-            const [lat, lng] = getCenterForCp(entry.cp)
             result.push({
               cp: entry.cp,
               level: entry.level,
               colonias: entry.colonias,
               geojson: {
                 type: "FeatureCollection",
-                features: [squarePolygon(lat, lng)],
+                features: [fallbackPolygon(entry.cp)],
               },
             })
           }
@@ -161,16 +138,15 @@ export function PostalCodesMap() {
         setStatus("done")
       })
       .catch(() => {
-        // Full fallback: render squares for every CP
+        // Full fallback: render circles for every CP
         const result: GeoJsonEntry[] = POSTAL_CODES.map((entry) => {
-          const [lat, lng] = getCenterForCp(entry.cp)
           return {
             cp: entry.cp,
             level: entry.level,
             colonias: entry.colonias,
             geojson: {
               type: "FeatureCollection",
-              features: [squarePolygon(lat, lng)],
+              features: [fallbackPolygon(entry.cp)],
             },
           }
         })
@@ -186,9 +162,9 @@ export function PostalCodesMap() {
       return {
         color,
         fillColor: color,
-        fillOpacity: isHovered ? 0.55 : 0.30,
-        weight: isHovered ? 2.5 : 1.5,
-        opacity: 0.85,
+        fillOpacity: isHovered ? 0.60 : 0.28,
+        weight: isHovered ? 3.0 : 1.8,
+        opacity: 1.0,
       }
     },
     [hoveredCp]
