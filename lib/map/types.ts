@@ -6,7 +6,7 @@
  * the LayerRenderer component without touching the core map setup.
  */
 
-export type LayerId = "risk-zones" | "safe-zones" | "routes" | "transit"
+export type LayerId = "risk-zones" | "safe-zones" | "routes" | "transit" | "reports"
 
 export interface MapLayer {
   /** Unique identifier for this layer */

@@ -4,7 +4,53 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* SafeRoute Durango — dark civic-tech theme */
+  /* SafeRoute Durango — Light mode (default) */
+  --background: oklch(0.98 0.005 240);
+  --foreground: oklch(0.15 0.01 240);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.15 0.01 240);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.15 0.01 240);
+  --primary: oklch(0.55 0.18 195);
+  --primary-foreground: oklch(0.98 0.005 240);
+  --secondary: oklch(0.94 0.01 240);
+  --secondary-foreground: oklch(0.25 0.01 240);
+  --muted: oklch(0.94 0.01 240);
+  --muted-foreground: oklch(0.45 0.01 240);
+  --accent: oklch(0.55 0.18 160);
+  --accent-foreground: oklch(0.98 0.005 240);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 240);
+  --success: oklch(0.55 0.18 145);
+  --success-foreground: oklch(0.98 0.005 240);
+  --border: oklch(0.88 0.01 240);
+  --input: oklch(0.88 0.01 240);
+  --ring: oklch(0.55 0.18 195);
+  --chart-1: oklch(0.55 0.18 195);
+  --chart-2: oklch(0.55 0.18 160);
+  --chart-3: oklch(0.55 0.22 25);
+  --chart-4: oklch(0.55 0.15 230);
+  --chart-5: oklch(0.65 0.12 90);
+  --radius: 0.5rem;
+  --sidebar: oklch(0.96 0.005 240);
+  --sidebar-foreground: oklch(0.15 0.01 240);
+  --sidebar-primary: oklch(0.55 0.18 195);
+  --sidebar-primary-foreground: oklch(0.98 0.005 240);
+  --sidebar-accent: oklch(0.94 0.01 240);
+  --sidebar-accent-foreground: oklch(0.25 0.01 240);
+  --sidebar-border: oklch(0.88 0.01 240);
+  --sidebar-ring: oklch(0.55 0.18 195);
+  /* Map-specific tokens */
+  --map-bg: oklch(0.96 0.005 240);
+  --layer-risk: oklch(0.55 0.22 25);
+  --layer-safe: oklch(0.55 0.18 160);
+  --layer-route: oklch(0.55 0.18 195);
+  --layer-transit: oklch(0.65 0.12 90);
+  --layer-reports: oklch(0.60 0.20 280);
+}
+
+.dark {
+  /* SafeRoute Durango — Dark mode */
   --background: oklch(0.13 0.01 240);
   --foreground: oklch(0.95 0.005 240);
   --card: oklch(0.17 0.012 240);
@@ -21,6 +67,8 @@
   --accent-foreground: oklch(0.13 0.01 240);
   --destructive: oklch(0.55 0.22 25);
   --destructive-foreground: oklch(0.95 0.005 240);
+  --success: oklch(0.65 0.20 145);
+  --success-foreground: oklch(0.13 0.01 240);
   --border: oklch(0.25 0.015 240);
   --input: oklch(0.22 0.015 240);
   --ring: oklch(0.72 0.18 195);
@@ -29,7 +77,6 @@
   --chart-3: oklch(0.55 0.22 25);
   --chart-4: oklch(0.70 0.15 230);
   --chart-5: oklch(0.80 0.12 90);
-  --radius: 0.5rem;
   --sidebar: oklch(0.15 0.012 240);
   --sidebar-foreground: oklch(0.95 0.005 240);
   --sidebar-primary: oklch(0.72 0.18 195);
@@ -44,6 +91,7 @@
   --layer-safe: oklch(0.65 0.20 160);
   --layer-route: oklch(0.72 0.18 195);
   --layer-transit: oklch(0.80 0.12 90);
+  --layer-reports: oklch(0.75 0.20 280);
 }
 
 @theme inline {
@@ -65,6 +113,8 @@
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -94,4 +144,99 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* Smooth color transitions for theme switching */
+  html {
+    transition: background-color 0.2s ease-in-out;
+  }
+  html:not([data-transitioning]) *,
+  html:not([data-transitioning]) *::before,
+  html:not([data-transitioning]) *::after {
+    transition: color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease, fill 0.15s ease, stroke 0.15s ease;
+  }
+}
+
+/* Leaflet popup customization - Light mode */
+.leaflet-popup-content-wrapper {
+  background: oklch(1 0 0);
+  color: oklch(0.15 0.01 240);
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  padding: 0;
+  border: 1px solid oklch(0.88 0.01 240);
+}
+
+.leaflet-popup-content {
+  margin: 12px;
+  font-family: var(--font-sans);
+  color: oklch(0.15 0.01 240);
+}
+
+.leaflet-popup-tip {
+  background: oklch(1 0 0);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.leaflet-popup-close-button {
+  color: oklch(0.45 0.01 240) !important;
+  font-size: 20px !important;
+  width: 28px !important;
+  height: 28px !important;
+  padding: 4px !important;
+  right: 8px !important;
+  top: 8px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: oklch(0.15 0.01 240) !important;
+}
+
+/* Leaflet popup customization - Dark mode */
+.dark .leaflet-popup-content-wrapper {
+  background: oklch(0.17 0.012 240);
+  color: oklch(0.95 0.005 240);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  border: 1px solid oklch(0.25 0.015 240);
+}
+
+.dark .leaflet-popup-content {
+  color: oklch(0.95 0.005 240);
+}
+
+.dark .leaflet-popup-tip {
+  background: oklch(0.17 0.012 240);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.dark .leaflet-popup-close-button {
+  color: oklch(0.60 0.01 240) !important;
+}
+
+.dark .leaflet-popup-close-button:hover {
+  color: oklch(0.95 0.005 240) !important;
+}
+
+/* Report popup specific styles */
+.report-popup .leaflet-popup-content p {
+  color: oklch(0.35 0.01 240);
+}
+
+.dark .report-popup .leaflet-popup-content p {
+  color: oklch(0.75 0.01 240);
+}
+
+.report-popup .leaflet-popup-content span {
+  color: oklch(0.15 0.01 240);
+}
+
+.dark .report-popup .leaflet-popup-content span {
+  color: oklch(0.95 0.005 240);
+}
+
+/* Custom marker animation */
+.custom-marker {
+  transition: transform 0.2s ease;
+}
+
+.custom-marker:hover {
+  transform: scale(1.1);
 }

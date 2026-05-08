@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { MapContainer, TileLayer, ZoomControl, Circle, Tooltip } from "react-leaflet"
+import { useTheme } from "next-themes"
 import "leaflet/dist/leaflet.css"
 import { SAFE_ZONES, ZONE_TYPE_COLORS, ZONE_TYPE_LABELS, type SafeZone } from "@/lib/map/safe-zones"
 import { DEFAULT_MAP_CONFIG } from "@/lib/map/types"
@@ -9,10 +10,21 @@ import { cn } from "@/lib/utils"
 
 const ZONE_TYPES = Object.keys(ZONE_TYPE_COLORS) as SafeZone["type"][]
 
+const TILE_LAYERS = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+}
+
 export function SafeZonesMap() {
   const [activeFilters, setActiveFilters] = useState<Set<SafeZone["type"]>>(
     new Set(ZONE_TYPES)
   )
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const toggleFilter = (type: SafeZone["type"]) => {
     setActiveFilters((prev) => {
@@ -28,6 +40,18 @@ export function SafeZonesMap() {
 
   const filteredZones = SAFE_ZONES.filter((z) => activeFilters.has(z.type))
 
+  const tileUrl = mounted
+    ? resolvedTheme === "dark"
+      ? TILE_LAYERS.dark
+      : TILE_LAYERS.light
+    : TILE_LAYERS.light
+
+  const bgColor = mounted
+    ? resolvedTheme === "dark"
+      ? "oklch(0.13 0.01 240)"
+      : "oklch(0.96 0.005 240)"
+    : "oklch(0.96 0.005 240)"
+
   return (
     <div className="relative w-full h-full">
       <MapContainer
@@ -37,10 +61,11 @@ export function SafeZonesMap() {
         maxZoom={DEFAULT_MAP_CONFIG.maxZoom}
         zoomControl={false}
         className="w-full h-full"
-        style={{ background: "oklch(0.13 0.01 240)" }}
+        style={{ background: bgColor }}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          key={tileUrl}
+          url={tileUrl}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
           subdomains="abcd"
           maxZoom={20}

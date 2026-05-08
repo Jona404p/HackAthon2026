@@ -17,8 +17,17 @@ import { RiskZonesLayer } from "@/components/map/layers/risk-zones-layer"
 import { SafeZonesLayer } from "@/components/map/layers/safe-zones-layer"
 import { RoutesLayer } from "@/components/map/layers/routes-layer"
 import { TransitLayer } from "@/components/map/layers/transit-layer"
+import { ReportsLayer } from "@/components/map/layers/reports-layer"
 
 export const LAYER_REGISTRY: MapLayer[] = [
+  {
+    id: "reports",
+    label: "Reportes de Ciudadanos",
+    description: "Reportes de problemas y seguridad de la comunidad",
+    enabled: true,
+    color: "var(--layer-reports)",
+    Component: ReportsLayer,
+  },
   {
     id: "risk-zones",
     label: "Zonas de Riesgo",

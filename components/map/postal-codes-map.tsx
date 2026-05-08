@@ -1,187 +1,88 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { MapContainer, TileLayer, ZoomControl, GeoJSON, Tooltip } from "react-leaflet"
-import type { Layer, PathOptions } from "leaflet"
-import type { Feature } from "geojson"
-import osmtogeojson from "osmtogeojson"
-import "leaflet/dist/leaflet.css"
-import {
-  POSTAL_CODES,
-  CP_LOOKUP,
-  SECURITY_COLORS,
-  SECURITY_LABELS,
-  type SecurityLevel,
-} from "@/lib/map/postal-codes"
-import { getPostalCodeCoordinates, generateCirclePolygon } from "@/lib/map/postal-codes-coords"
+import { useEffect, useState, useMemo } from "react"
+import { MapContainer, TileLayer, ZoomControl } from "react-leaflet"
+import { useTheme } from "next-themes"
 import { DEFAULT_MAP_CONFIG } from "@/lib/map/types"
-import { cn } from "@/lib/utils"
+import { HeatmapLayer } from "./heatmap-layer"
+import { AlertTriangle, Flame, Car, Info, Loader2 } from "lucide-react"
+import "leaflet/dist/leaflet.css"
 
-// Build the Overpass query fetching all postal code boundaries at once
-function buildOverpassQuery(cps: string[]): string {
-  const cpList = cps.map((cp) => `"postal_code"="${cp}"`).join(" ")
-  return `
-    [out:json][timeout:60];
-    (
-      relation["boundary"="postal_code"](area["name"="Durango"]["admin_level"="4"]);
-      ${cps.map((cp) => `relation["postal_code"="${cp}"]["boundary"="postal_code"];`).join("\n      ")}
-    );
-    out body;
-    >;
-    out skel qt;
-  `.trim()
+const TILE_LAYERS = {
+  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
 }
 
-// Fallback: build a circular polygon for a postal code
-function fallbackPolygon(cp: string) {
-  const coords = getPostalCodeCoordinates(cp)
-  if (!coords) {
-    // Last resort fallback for unknown postal codes
-    return generateCirclePolygon(24.028, -104.653, 0.008, 12)
-  }
-  return generateCirclePolygon(coords.lat, coords.lng, coords.radius, 24)
+const RISK_CATEGORIES = ["robo", "incendio", "accidente"]
+
+interface Report {
+  id: string
+  latitude: number
+  longitude: number
+  category: string
+  created_at: string
 }
-
-type LoadStatus = "idle" | "loading" | "done" | "error"
-
-interface GeoJsonEntry {
-  cp: string
-  level: SecurityLevel
-  colonias: string
-  geojson: ReturnType<typeof osmtogeojson> | { type: "FeatureCollection"; features: ReturnType<typeof squarePolygon>[] }
-}
-
-const LEVEL_FILTERS: SecurityLevel[] = ["seguro", "precaucion", "riesgo"]
 
 export function PostalCodesMap() {
-  const [entries, setEntries] = useState<GeoJsonEntry[]>([])
-  const [status, setStatus] = useState<LoadStatus>("idle")
-  const [activeFilters, setActiveFilters] = useState<Set<SecurityLevel>>(new Set(LEVEL_FILTERS))
-  const [hoveredCp, setHoveredCp] = useState<string | null>(null)
-
-  const toggleFilter = (level: SecurityLevel) => {
-    setActiveFilters((prev) => {
-      const next = new Set(prev)
-      if (next.has(level)) next.delete(level)
-      else next.add(level)
-      return next
-    })
-  }
+  const [mounted, setMounted] = useState(false)
+  const [reports, setReports] = useState<Report[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const { resolvedTheme } = useTheme()
 
   useEffect(() => {
-    setStatus("loading")
-
-    const cpList = POSTAL_CODES.map((e) => e.cp)
-
-    // Query Overpass for all CPs at once
-    const query = cpList
-      .map(
-        (cp) =>
-          `relation["postal_code"="${cp}"]["boundary"="postal_code"];`
-      )
-      .join("\n")
-
-    const overpassQuery = `[out:json][timeout:60];\n(\n${query}\n);\nout body;\n>;\nout skel qt;`
-
-    fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: `data=${encodeURIComponent(overpassQuery)}`,
-    })
-      .then((r) => r.json())
-      .then((osmData) => {
-        const gj = osmtogeojson(osmData) as { type: string; features: Feature[] }
-        const foundCps = new Set<string>()
-
-        // Group features by postal_code property
-        const featuresByCp = new Map<string, Feature[]>()
-        for (const feature of gj.features) {
-          const cp =
-            (feature.properties?.postal_code as string) ||
-            (feature.properties?.["addr:postcode"] as string)
-          if (cp && CP_LOOKUP.has(cp)) {
-            if (!featuresByCp.has(cp)) featuresByCp.set(cp, [])
-            featuresByCp.get(cp)!.push(feature)
-            foundCps.add(cp)
-          }
-        }
-
-        const result: GeoJsonEntry[] = []
-
-        // Add entries from Overpass
-        for (const [cp, features] of featuresByCp) {
-          const meta = CP_LOOKUP.get(cp)!
-          result.push({
-            cp,
-            level: meta.level,
-            colonias: meta.colonias,
-            geojson: { type: "FeatureCollection", features },
-          })
-        }
-
-        // Fallback circles for CPs not found in Overpass
-        for (const entry of POSTAL_CODES) {
-          if (!foundCps.has(entry.cp)) {
-            result.push({
-              cp: entry.cp,
-              level: entry.level,
-              colonias: entry.colonias,
-              geojson: {
-                type: "FeatureCollection",
-                features: [fallbackPolygon(entry.cp)],
-              },
-            })
-          }
-        }
-
-        setEntries(result)
-        setStatus("done")
-      })
-      .catch(() => {
-        // Full fallback: render circles for every CP
-        const result: GeoJsonEntry[] = POSTAL_CODES.map((entry) => {
-          return {
-            cp: entry.cp,
-            level: entry.level,
-            colonias: entry.colonias,
-            geojson: {
-              type: "FeatureCollection",
-              features: [fallbackPolygon(entry.cp)],
-            },
-          }
-        })
-        setEntries(result)
-        setStatus("error")
-      })
+    setMounted(true)
   }, [])
 
-  const styleForEntry = useCallback(
-    (entry: GeoJsonEntry): PathOptions => {
-      const color = SECURITY_COLORS[entry.level]
-      const isHovered = hoveredCp === entry.cp
-      return {
-        color,
-        fillColor: color,
-        fillOpacity: isHovered ? 0.60 : 0.28,
-        weight: isHovered ? 3.0 : 1.8,
-        opacity: 1.0,
+  // Cargar reportes desde la API
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        setIsLoading(true)
+        const response = await fetch("/api/reports")
+        const data = await response.json()
+
+        if (!response.ok) {
+          throw new Error(data.error || "Error al cargar reportes")
+        }
+
+        setReports(data.reports || [])
+        setError(null)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Error desconocido")
+      } finally {
+        setIsLoading(false)
       }
-    },
-    [hoveredCp]
-  )
+    }
 
-  const onEachFeature = useCallback(
-    (entry: GeoJsonEntry) =>
-      (_feature: Feature, layer: Layer) => {
-        layer.on({
-          mouseover: () => setHoveredCp(entry.cp),
-          mouseout: () => setHoveredCp(null),
-        })
-      },
-    []
-  )
+    fetchReports()
+  }, [])
 
-  const visibleEntries = entries.filter((e) => activeFilters.has(e.level))
+  // Filtrar solo reportes de riesgo
+  const riskReports = useMemo(() => {
+    return reports.filter((report) => RISK_CATEGORIES.includes(report.category))
+  }, [reports])
+
+  // Contar por categoría
+  const categoryCounts = useMemo(() => {
+    return {
+      robo: riskReports.filter((r) => r.category === "robo").length,
+      incendio: riskReports.filter((r) => r.category === "incendio").length,
+      accidente: riskReports.filter((r) => r.category === "accidente").length,
+    }
+  }, [riskReports])
+
+  const tileUrl = mounted
+    ? resolvedTheme === "dark"
+      ? TILE_LAYERS.dark
+      : TILE_LAYERS.light
+    : TILE_LAYERS.light
+
+  const bgColor = mounted
+    ? resolvedTheme === "dark"
+      ? "oklch(0.13 0.01 240)"
+      : "oklch(0.96 0.005 240)"
+    : "oklch(0.96 0.005 240)"
 
   return (
     <div className="relative w-full h-full">
@@ -192,78 +93,120 @@ export function PostalCodesMap() {
         maxZoom={DEFAULT_MAP_CONFIG.maxZoom}
         zoomControl={false}
         className="w-full h-full"
-        style={{ background: "oklch(0.13 0.01 240)" }}
+        style={{ background: bgColor }}
       >
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+          key={tileUrl}
+          url={tileUrl}
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
           subdomains="abcd"
           maxZoom={20}
         />
-
         <ZoomControl position="bottomleft" />
-
-        {visibleEntries.map((entry) => (
-          <GeoJSON
-            key={`${entry.cp}-${hoveredCp === entry.cp}`}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            data={entry.geojson as any}
-            style={styleForEntry(entry)}
-            onEachFeature={onEachFeature(entry)}
-          >
-            <Tooltip sticky direction="top">
-              <div className="text-xs space-y-0.5">
-                <p className="font-bold font-mono">CP {entry.cp}</p>
-                <p className="font-semibold" style={{ color: SECURITY_COLORS[entry.level] }}>
-                  {SECURITY_LABELS[entry.level]}
-                </p>
-                <p className="text-muted-foreground">{entry.colonias}</p>
-              </div>
-            </Tooltip>
-          </GeoJSON>
-        ))}
+        
+        {/* Heatmap layer */}
+        {!isLoading && riskReports.length > 0 && (
+          <HeatmapLayer reports={riskReports} />
+        )}
       </MapContainer>
 
-      {/* Legend / filter panel */}
-      <div className="absolute top-4 right-4 z-[1000] bg-card/90 backdrop-blur-sm border border-border rounded-lg p-3 shadow-lg min-w-[180px]">
-        <p className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wide font-mono">
-          Nivel de Seguridad
-        </p>
-        <div className="flex flex-col gap-1.5">
-          {LEVEL_FILTERS.map((level) => (
-            <button
-              key={level}
-              onClick={() => toggleFilter(level)}
-              className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded text-xs font-medium transition-all text-left",
-                activeFilters.has(level)
-                  ? "bg-secondary text-foreground"
-                  : "bg-muted/30 text-muted-foreground opacity-40"
-              )}
-            >
-              <span
-                className="w-3 h-3 rounded-sm shrink-0"
-                style={{ backgroundColor: SECURITY_COLORS[level] }}
-              />
-              <span className="leading-tight">{SECURITY_LABELS[level]}</span>
-            </button>
-          ))}
+      {/* Panel de leyenda */}
+      <div className="absolute top-4 right-4 z-[999] bg-background/95 backdrop-blur-sm border border-border rounded-xl shadow-lg p-4 max-w-[280px]">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="w-8 h-8 rounded-lg bg-destructive/15 flex items-center justify-center">
+            <AlertTriangle className="w-4 h-4 text-destructive" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-sm text-foreground">Mapa de Riesgo</h3>
+            <p className="text-[10px] text-muted-foreground">Basado en reportes ciudadanos</p>
+          </div>
         </div>
 
-        {status === "loading" && (
-          <p className="text-[10px] text-muted-foreground mt-2 font-mono animate-pulse">
-            Cargando polígonos…
-          </p>
+        {/* Estado de carga */}
+        {isLoading && (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+            <Loader2 className="w-3 h-3 animate-spin" />
+            Cargando datos...
+          </div>
         )}
-        {status === "error" && (
-          <p className="text-[10px] text-yellow-500/70 mt-2 font-mono">
-            Usando polígonos aproximados
-          </p>
+
+        {/* Error */}
+        {error && (
+          <div className="text-xs text-destructive py-2">
+            Error: {error}
+          </div>
+        )}
+
+        {/* Contadores por categoría */}
+        {!isLoading && !error && (
+          <>
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-orange-500/20 flex items-center justify-center">
+                    <AlertTriangle className="w-3 h-3 text-orange-500" />
+                  </div>
+                  <span className="text-muted-foreground">Robos / Asaltos</span>
+                </div>
+                <span className="font-mono font-medium text-foreground">{categoryCounts.robo}</span>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-red-500/20 flex items-center justify-center">
+                    <Flame className="w-3 h-3 text-red-500" />
+                  </div>
+                  <span className="text-muted-foreground">Incendios</span>
+                </div>
+                <span className="font-mono font-medium text-foreground">{categoryCounts.incendio}</span>
+              </div>
+              
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded bg-red-600/20 flex items-center justify-center">
+                    <Car className="w-3 h-3 text-red-600" />
+                  </div>
+                  <span className="text-muted-foreground">Accidentes</span>
+                </div>
+                <span className="font-mono font-medium text-foreground">{categoryCounts.accidente}</span>
+              </div>
+            </div>
+
+            {/* Gradiente de intensidad */}
+            <div className="border-t border-border pt-3">
+              <p className="text-[10px] text-muted-foreground mb-2">Intensidad de riesgo</p>
+              <div className="h-2 rounded-full overflow-hidden" style={{
+                background: "linear-gradient(to right, #22c55e, #eab308, #f97316, #ef4444, #dc2626)"
+              }} />
+              <div className="flex justify-between mt-1">
+                <span className="text-[9px] text-muted-foreground">Bajo</span>
+                <span className="text-[9px] text-muted-foreground">Alto</span>
+              </div>
+            </div>
+
+            {/* Info */}
+            <div className="mt-3 pt-3 border-t border-border">
+              <div className="flex items-start gap-2 text-[10px] text-muted-foreground">
+                <Info className="w-3 h-3 mt-0.5 shrink-0" />
+                <p>
+                  El mapa de calor se genera automaticamente basado en la ubicacion y 
+                  frecuencia de reportes. Las zonas mas rojas indican mayor concentracion 
+                  de incidentes.
+                </p>
+              </div>
+            </div>
+
+            {riskReports.length === 0 && (
+              <div className="text-xs text-muted-foreground text-center py-4">
+                No hay reportes de riesgo disponibles
+              </div>
+            )}
+          </>
         )}
       </div>
 
-      <div className="absolute bottom-2 right-2 z-[999] text-[10px] text-muted-foreground/60 font-mono pointer-events-none">
-        NoFear Durango — Códigos Postales
+      <div className="absolute bottom-2 right-2 z-[999] text-[10px] text-muted-foreground/50 font-mono pointer-events-none">
+        NoFear Durango
       </div>
     </div>
   )

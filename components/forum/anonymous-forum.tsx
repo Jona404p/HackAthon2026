@@ -1,10 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import {
   MessageSquare,
@@ -29,8 +28,12 @@ import {
   RefreshCw,
   Lock,
   ChevronRight,
+  Map,
+  ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 
 interface Comment {
   id: string
@@ -45,6 +48,15 @@ interface Post {
   category: string
   created_at: string
   comment_count: number
+  map_report_id?: string
+  image_url?: string | null
+}
+
+interface MapReportInfo {
+  id: string
+  latitude: number
+  longitude: number
+  category: string
 }
 
 const CATEGORIES = [
@@ -80,17 +92,25 @@ function formatTimeAgo(dateString: string): string {
 function CommentSection({
   post,
   onCommentAdded,
+  autoOpen = false,
 }: {
   post: Post
   onCommentAdded: (postId: string) => void
+  autoOpen?: boolean
 }) {
   const supabase = createClient()
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(autoOpen)
   const [comments, setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState("")
   const [isLoadingComments, setIsLoadingComments] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (autoOpen) {
+      loadComments()
+    }
+  }, [autoOpen])
 
   async function loadComments() {
     setIsLoadingComments(true)
@@ -228,17 +248,16 @@ function CommentSection({
 // ---------------------------------------------------------------------------
 // AnonymousForum
 // ---------------------------------------------------------------------------
-export function AnonymousForum() {
+export function AnonymousForum({ initialPostId }: { initialPostId?: string } = {}) {
   const supabase = createClient()
+  const searchParams = useSearchParams()
+  const highlightPostId = initialPostId || searchParams.get("post")
+  const highlightedRef = useRef<HTMLDivElement>(null)
 
   const [posts, setPosts] = useState<Post[]>([])
-  const [newContent, setNewContent] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("general")
+  const [mapReports, setMapReports] = useState<Record<string, MapReportInfo>>({})
   const [filterCategory, setFilterCategory] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [postError, setPostError] = useState<string | null>(null)
-  const [showAllCategories, setShowAllCategories] = useState(false)
 
   const fetchPosts = useCallback(async () => {
     setIsLoading(true)
@@ -265,6 +284,26 @@ export function AnonymousForum() {
       setPosts(
         postsData.map((p) => ({ ...p, comment_count: countMap[p.id] ?? 0 }))
       )
+
+      // Fetch map report info for posts that have one
+      const mapReportIds = postsData
+        .filter((p) => p.map_report_id)
+        .map((p) => p.map_report_id)
+
+      if (mapReportIds.length > 0) {
+        const { data: reportData } = await supabase
+          .from("map_reports")
+          .select("id, latitude, longitude, category")
+          .in("id", mapReportIds)
+
+        if (reportData) {
+          const reportMap: Record<string, MapReportInfo> = {}
+          reportData.forEach((r) => {
+            reportMap[r.id] = r
+          })
+          setMapReports(reportMap)
+        }
+      }
     } else if (!error) {
       setPosts([])
     }
@@ -288,30 +327,14 @@ export function AnonymousForum() {
     return () => { supabase.removeChannel(channel) }
   }, [fetchPosts])
 
-  async function handleSubmitPost(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = newContent.trim()
-    if (!trimmed || isSubmitting) return
-
-    setIsSubmitting(true)
-    setPostError(null)
-
-    const { error } = await supabase.from("anonymous_posts").insert({
-      content: trimmed,
-      category: selectedCategory,
-    })
-
-    if (error) {
-      setPostError("Error al publicar. Intenta de nuevo.")
-    } else {
-      setNewContent("")
-      setSelectedCategory("general")
-      // Refrescar lista inmediatamente tras publicar
-      await fetchPosts()
+  // Scroll to highlighted post
+  useEffect(() => {
+    if (highlightPostId && !isLoading && highlightedRef.current) {
+      setTimeout(() => {
+        highlightedRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+      }, 100)
     }
-
-    setIsSubmitting(false)
-  }
+  }, [highlightPostId, isLoading])
 
   // Cuando un comentario se agrega, incrementar el contador local sin refrescar todo
   function handleCommentAdded(postId: string) {
@@ -325,10 +348,6 @@ export function AnonymousForum() {
   const filteredPosts = filterCategory
     ? posts.filter((p) => p.category === filterCategory)
     : posts
-
-  const visibleFormCategories = showAllCategories
-    ? CATEGORIES
-    : CATEGORIES.slice(0, 6)
 
   return (
     <div className="w-full max-w-2xl mx-auto px-4">
@@ -358,91 +377,24 @@ export function AnonymousForum() {
         </p>
       </div>
 
-      {/* ------------------------------------------------------------------ */}
-      {/* Post Form                                                            */}
-      {/* ------------------------------------------------------------------ */}
-      <Card className="mb-6 border-border/60">
-        <CardContent className="p-5">
-          <form onSubmit={handleSubmitPost} className="space-y-4">
-            <Textarea
-              placeholder="Comparte algo sobre seguridad, salud, educacion, gobierno... Tu comunidad te escucha."
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              className="min-h-[96px] resize-none bg-background text-sm"
-              maxLength={500}
-            />
-
-            {/* Category picker */}
-            <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                Tablero
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {visibleFormCategories.map((cat) => {
-                  const Icon = cat.icon
-                  const active = selectedCategory === cat.value
-                  return (
-                    <button
-                      key={cat.value}
-                      type="button"
-                      onClick={() => setSelectedCategory(cat.value)}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                        active
-                          ? cat.color
-                          : "bg-transparent text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                      )}
-                    >
-                      <Icon className="w-3.5 h-3.5 shrink-0" />
-                      {cat.label}
-                    </button>
-                  )
-                })}
-              </div>
-              {CATEGORIES.length > 6 && (
-                <button
-                  type="button"
-                  onClick={() => setShowAllCategories(!showAllCategories)}
-                  className="flex items-center gap-1 text-xs text-primary hover:underline mt-2"
-                >
-                  <ChevronRight
-                    className={cn(
-                      "w-3.5 h-3.5 transition-transform",
-                      showAllCategories && "rotate-90"
-                    )}
-                  />
-                  {showAllCategories
-                    ? "Ver menos"
-                    : `${CATEGORIES.length - 6} tableros mas`}
-                </button>
-              )}
-            </div>
-
-            {postError && (
-              <p className="text-xs text-destructive">{postError}</p>
-            )}
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-muted-foreground">
-                {newContent.length}/500
-              </span>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={!newContent.trim() || isSubmitting}
-                className="gap-2"
-              >
-                {isSubmitting ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-                {isSubmitting ? "Publicando..." : "Publicar anonimamente"}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      {/* Map Report CTA - Primary action */}
+      <Link
+        href="/mapa"
+        className="flex items-center gap-4 rounded-xl border-2 border-primary/30 bg-primary/5 px-5 py-4 mb-6 hover:bg-primary/10 hover:border-primary/50 transition-all group"
+      >
+        <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          <Map className="w-6 h-6 text-primary" />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-semibold text-foreground mb-0.5">
+            Reporta un incidente en el mapa
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Marca la ubicacion exacta y se creara automaticamente una discusion aqui
+          </p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-primary opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+      </Link>
 
       {/* ------------------------------------------------------------------ */}
       {/* Filter Bar                                                           */}
@@ -539,13 +491,26 @@ export function AnonymousForum() {
         {/* Empty state */}
         {!isLoading && filteredPosts.length === 0 && (
           <Card className="border-dashed">
-            <CardContent className="py-12 flex flex-col items-center gap-3 text-center">
-              <MessageSquare className="w-10 h-10 text-muted-foreground/40" />
-              <p className="text-sm text-muted-foreground">
-                {filterCategory
-                  ? "Sin publicaciones en este tablero todavia."
-                  : "Sin publicaciones todavia. Se el primero en compartir."}
-              </p>
+            <CardContent className="py-12 flex flex-col items-center gap-4 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <Map className="w-8 h-8 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground mb-1">
+                  {filterCategory
+                    ? "Sin publicaciones en este tablero"
+                    : "Sin reportes todavia"}
+                </p>
+                <p className="text-xs text-muted-foreground max-w-xs">
+                  Los reportes se crean desde el mapa interactivo. Marca una ubicacion para iniciar una discusion.
+                </p>
+              </div>
+              <Link href="/mapa">
+                <Button size="sm" className="gap-2">
+                  <MapPin className="w-4 h-4" />
+                  Ir al mapa
+                </Button>
+              </Link>
             </CardContent>
           </Card>
         )}
@@ -555,33 +520,130 @@ export function AnonymousForum() {
           filteredPosts.map((post) => {
             const cat = getCategoryMeta(post.category)
             const Icon = cat.icon
+            const isHighlighted = post.id === highlightPostId
+            const mapReport = post.map_report_id ? mapReports[post.map_report_id] : null
+            const hasImage = !!post.image_url
+
             return (
               <Card
                 key={post.id}
-                className="transition-colors hover:border-primary/30"
+                ref={isHighlighted ? highlightedRef : undefined}
+                className={cn(
+                  "transition-all overflow-hidden",
+                  isHighlighted
+                    ? "border-primary ring-2 ring-primary/20"
+                    : "hover:border-primary/30",
+                  mapReport && "border-l-4 border-l-blue-500"
+                )}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-center justify-between gap-3 mb-3">
-                    <Badge
-                      variant="outline"
-                      className={cn("text-xs gap-1.5 font-medium", cat.color)}
-                    >
-                      <Icon className="w-3.5 h-3.5" />
-                      {cat.label}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
-                      <Clock className="w-3 h-3" />
-                      {formatTimeAgo(post.created_at)}
-                    </span>
-                  </div>
+                {/* Image header - shown prominently at the top if available */}
+                {hasImage && (
+                  <a
+                    href={post.image_url!}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block relative group"
+                  >
+                    <div className="relative h-48 sm:h-56 overflow-hidden bg-muted/30">
+                      <img
+                        src={`/api/image?url=${encodeURIComponent(post.image_url!)}`}
+                        alt="Imagen del reporte"
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                      
+                      {/* Category badge overlay on image */}
+                      <div className="absolute top-3 left-3">
+                        <Badge
+                          variant="outline"
+                          className={cn("text-xs gap-1.5 font-medium backdrop-blur-sm bg-background/80", cat.color)}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {cat.label}
+                        </Badge>
+                      </div>
+                      
+                      {/* Time badge on image */}
+                      <div className="absolute top-3 right-3">
+                        <span className="text-[11px] text-white/90 bg-black/40 backdrop-blur-sm rounded-full px-2 py-1 flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatTimeAgo(post.created_at)}
+                        </span>
+                      </div>
+                      
+                      {/* Map badge on image */}
+                      {mapReport && (
+                        <div className="absolute bottom-3 left-3">
+                          <Badge
+                            variant="outline"
+                            className="text-xs gap-1 font-medium bg-blue-500/90 text-white border-blue-400/50 backdrop-blur-sm"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            Ver en mapa
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {/* View full image hint */}
+                      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[11px] text-white bg-black/50 backdrop-blur-sm rounded-full px-2.5 py-1 flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" />
+                          Ver completa
+                        </span>
+                      </div>
+                    </div>
+                  </a>
+                )}
+                
+                <CardContent className={cn("p-4", hasImage && "pt-3")}>
+                  {/* Header - only show badges here if no image */}
+                  {!hasImage && (
+                    <div className="flex items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="outline"
+                          className={cn("text-xs gap-1.5 font-medium", cat.color)}
+                        >
+                          <Icon className="w-3.5 h-3.5" />
+                          {cat.label}
+                        </Badge>
+                        {mapReport && (
+                          <Badge
+                            variant="outline"
+                            className="text-xs gap-1 font-medium bg-blue-500/15 text-blue-400 border-blue-500/25"
+                          >
+                            <MapPin className="w-3 h-3" />
+                            Mapa
+                          </Badge>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground flex items-center gap-1 shrink-0">
+                        <Clock className="w-3 h-3" />
+                        {formatTimeAgo(post.created_at)}
+                      </span>
+                    </div>
+                  )}
 
                   <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
                     {post.content}
                   </p>
 
+                  {/* Map link if from map report */}
+                  {mapReport && (
+                    <Link
+                      href={`/mapa?lat=${mapReport.latitude}&lng=${mapReport.longitude}&zoom=17`}
+                      className="inline-flex items-center gap-1.5 mt-3 text-xs text-blue-400 hover:underline"
+                    >
+                      <Map className="w-3.5 h-3.5" />
+                      Ver ubicacion en el mapa
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  )}
+
                   <CommentSection
                     post={post}
                     onCommentAdded={handleCommentAdded}
+                    autoOpen={isHighlighted}
                   />
                 </CardContent>
               </Card>
