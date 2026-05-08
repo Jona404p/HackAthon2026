@@ -8,7 +8,7 @@ import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Slider } from "@/components/ui/slider"
 import { Separator } from "@/components/ui/separator"
-import { ScrollArea } from "@/components/ui/scroll-area"
+
 import {
   MapPin,
   Navigation,
@@ -166,7 +166,7 @@ export function RouteControlPanel({
       )}
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 min-h-0 overflow-y-auto">
         <div className={`p-4 space-y-4 ${isMobile ? 'pb-24' : ''}`}>
           {/* Puntos de ruta */}
           <Card>
@@ -509,7 +509,7 @@ export function RouteControlPanel({
             </Card>
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Footer - solo en desktop */}
       {!isMobile && (

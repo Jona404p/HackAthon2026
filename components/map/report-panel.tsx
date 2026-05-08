@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
-import { ScrollArea } from "@/components/ui/scroll-area"
+
 import { Badge } from "@/components/ui/badge"
 import {
   Plus,
@@ -468,7 +468,7 @@ export function ReportPanel({
             </Button>
           </div>
 
-          <ScrollArea className="flex-1">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-3">
               {/* Stats */}
               {!isLoadingReports && reports.length > 0 && <StatsCard reports={reports} />}
@@ -522,7 +522,7 @@ export function ReportPanel({
                 </div>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </>
       )}
 
@@ -543,7 +543,7 @@ export function ReportPanel({
             </div>
           </div>
 
-          <ScrollArea className="flex-1">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="p-4 space-y-5">
               {submitSuccess ? (
                 /* SUCCESS STATE */
@@ -825,7 +825,7 @@ export function ReportPanel({
                 </>
               )}
             </div>
-          </ScrollArea>
+          </div>
         </>
       )}
     </aside>

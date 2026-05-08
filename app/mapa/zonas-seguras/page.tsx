@@ -84,8 +84,8 @@ export default function ZonasSeguras() {
           <div className="absolute bottom-20 right-4 z-40">
             <Sheet open={showLegend} onOpenChange={setShowLegend}>
               <SheetTrigger asChild>
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="rounded-full w-14 h-14 shadow-lg shadow-primary/30 hover:shadow-xl hover:shadow-primary/40"
                   title="Ver leyenda del mapa"
                 >
@@ -93,8 +93,8 @@ export default function ZonasSeguras() {
                   <span className="sr-only">Ver leyenda del mapa</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent 
-                side="bottom" 
+              <SheetContent
+                side="bottom"
                 className="h-[85dvh] p-0 rounded-t-3xl border-t border-border/50 flex flex-col overflow-y-auto"
               >
                 <CollapsibleLegend
