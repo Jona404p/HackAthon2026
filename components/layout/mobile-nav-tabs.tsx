@@ -2,7 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import Link from "next/link"
-import { MapPin, Shield, Route } from "lucide-react"
+import { MapPin, Route } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   Tooltip,
@@ -20,12 +20,6 @@ export function MobileNavTabs() {
       icon: MapPin,
       label: "Reportes",
       isActive: pathname === "/mapa",
-    },
-    {
-      href: "/mapa/zonas-seguras",
-      icon: Shield,
-      label: "Zonas Seguras",
-      isActive: pathname === "/mapa/zonas-seguras",
     },
     {
       href: "/mapa/rutas-seguras",

@@ -3,7 +3,7 @@
 import Image from 'next/image'
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { MapPin, Shield, Route, Home } from "lucide-react"
+import { MapPin, Route, Home } from "lucide-react"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { cn } from "@/lib/utils"
 
@@ -13,7 +13,6 @@ interface NavbarProps {
 
 const mapNavLinks = [
   { href: "/mapa", label: "Reportes", icon: MapPin, exact: true },
-  { href: "/mapa/zonas-seguras", label: "Zonas Seguras", icon: Shield, exact: true },
   { href: "/mapa/rutas-seguras", label: "Rutas Seguras", icon: Route, exact: true },
 ]
 

@@ -179,7 +179,7 @@ export function PostalCodesMap() {
             <div className="border-t border-border pt-3">
               <p className="text-[10px] text-muted-foreground mb-2">Intensidad de riesgo</p>
               <div className="h-2 rounded-full overflow-hidden" style={{
-                background: "linear-gradient(to right, #22c55e, #eab308, #f97316, #ef4444, #dc2626)"
+                background: "linear-gradient(to right, #22c55e, #84cc16, #eab308, #f97316)"
               }} />
               <div className="flex justify-between mt-1">
                 <span className="text-[9px] text-muted-foreground">Bajo</span>

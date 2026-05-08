@@ -46,16 +46,6 @@ const legendItems = [
     label: "Precaución",
     description: "Riesgo medio-alto, varios incidentes",
   },
-  {
-    color: "#ef4444",
-    label: "Alto Riesgo",
-    description: "Riesgo significativo, evitar si es posible",
-  },
-  {
-    color: "#dc2626",
-    label: "Crítico",
-    description: "Riesgo muy alto, máxima precaución",
-  },
 ]
 
 export default function ZonasSeguras() {
